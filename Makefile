@@ -11,7 +11,8 @@ FFMPEG_LIBS = \
 	-lavutil
 
 SDL_LIBS = \
-	-lSDL2
+	-lSDL2 \
+	-lSDL2_ttf
 
 TARGET = camera_yuv.exe
 
@@ -19,7 +20,8 @@ OBJS = \
 	camera_yuv.o \
 	camera_device.o \
 	shadow_detector.o \
-	video_encoder.o
+	video_encoder.o \
+	ui_controls.o
 
 PORTABLE_DIR = portable
 
@@ -37,7 +39,7 @@ $(TARGET): $(OBJS)
 		$(SDL_LIBS)
 
 
-camera_yuv.o: camera_yuv.c camera_device.h shadow_detector.h video_encoder.h
+camera_yuv.o: camera_yuv.c camera_device.h shadow_detector.h video_encoder.h ui_controls.h
 	$(CC) $(CFLAGS) -c camera_yuv.c -o camera_yuv.o
 
 
@@ -53,6 +55,10 @@ video_encoder.o: video_encoder.c video_encoder.h
 	$(CC) $(CFLAGS) -c video_encoder.c -o video_encoder.o
 
 
+ui_controls.o: ui_controls.c ui_controls.h
+	$(CC) $(CFLAGS) -c ui_controls.c -o ui_controls.o
+
+
 # ============================================================
 # CLEAN
 # ============================================================
@@ -62,7 +68,7 @@ clean:
 
 
 # ============================================================
-# PORTABLE BUILD
+# PORTABLE
 # ============================================================
 
 portable: $(TARGET)
@@ -77,16 +83,11 @@ portable: $(TARGET)
 	mkdir -p "$(PORTABLE_DIR)"
 
 	@echo [1/4] Copying application...
-
 	cp "$(TARGET)" "$(PORTABLE_DIR)/"
 
 	@echo
 	@echo [2/4] Finding DLL dependencies...
-	@echo
-
 	ldd "$(TARGET)" > portable_ldd.txt
-
-	@echo Required DLLs:
 
 	@for dll in $$(ldd "$(TARGET)" | \
 		sed -n 's/.*=> \(\/ucrt64\/bin\/[^ ]*\.dll\).*/\1/p'); do \
@@ -98,7 +99,6 @@ portable: $(TARGET)
 
 	@echo
 	@echo [3/4] Checking FFmpeg, SDL2 and runtime DLLs...
-	@echo
 
 	@for dll in \
 		"C:/msys64/ucrt64/bin/avcodec-63.dll" \
@@ -109,6 +109,7 @@ portable: $(TARGET)
 		"C:/msys64/ucrt64/bin/swresample-7.dll" \
 		"C:/msys64/ucrt64/bin/swscale-10.dll" \
 		"C:/msys64/ucrt64/bin/SDL2.dll" \
+		"C:/msys64/ucrt64/bin/SDL2_ttf.dll" \
 		"C:/msys64/ucrt64/bin/libgcc_s_seh-1.dll" \
 		"C:/msys64/ucrt64/bin/libstdc++-6.dll" \
 		"C:/msys64/ucrt64/bin/libwinpthread-1.dll"; do \
@@ -122,7 +123,6 @@ portable: $(TARGET)
 
 	@echo
 	@echo [4/4] Creating README...
-	@echo
 
 	@printf '%s\n' \
 		'CAMERA YUV - PORTABLE VERSION' \
@@ -131,30 +131,16 @@ portable: $(TARGET)
 		'Run camera_yuv.exe' \
 		'' \
 		'FFmpeg and SDL2 DLLs are included.' \
-		'The program uses Windows DirectShow for cameras.' \
 		'' \
-		'Do not delete the DLL files.' \
+		'Place arial.ttf next to the exe if' \
+		'no system font is found.' \
 		> "$(PORTABLE_DIR)/README.txt"
 
 	@echo
 	@echo ========================================
 	@echo PORTABLE PACKAGE CREATED
 	@echo ========================================
-	@echo
-
-	@echo Location:
-	@echo "$(PORTABLE_DIR)/"
-
-	@echo
-	@echo Files:
-
 	@ls -lh "$(PORTABLE_DIR)"
-
-	@echo
-	@echo ========================================
-	@echo DONE
-	@echo ========================================
-	@echo
 
 
 .PHONY: all clean portable
